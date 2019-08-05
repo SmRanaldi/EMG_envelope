@@ -6,6 +6,7 @@ Algorithm for the automatic estimation of the RMS envelope of the surface electr
 This package contains the MATLAB codes for implementing the algorithm described in:
 
 S.Ranaldi, C. De Marchis and S. Conforto "An automatic, adaptive, information-based method for the extraction of the sEMG envelope"
+https://doi.org/10.1016/j.jelekin.2018.06.001
 
 This package contains some mex function to speed up the algorithm using C functions.
 
