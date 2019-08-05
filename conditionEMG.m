@@ -3,8 +3,6 @@ function [out,outOld]=conditionEMG(signal,language)
 % [out]=conditionEMG(signal)
 %
 % Conditioning block for an EMG signal.
-% Consists of a [20, 450] Hz band pass filter, a 50 Hz notch filter
-% and a prewhitening AR filter.
 %
 % INPUTS:
 % 	signal: The EMG signal to be conditioned.
