@@ -82,6 +82,10 @@ end
 
 [signal, signalOld]=conditionEMG(signal,language);
 
+if ~whiteTest(signal)
+    disp('Warning: signal is not white.');
+end
+
 convStep=maxIter*ones(size(signal));
 idx=1:length(signal);
 idx1=1:length(signal);
@@ -107,11 +111,9 @@ m=ones(size(signal)).*(ll);
 
 %% Test for the whiteness of the signal.
 
-% if ~whiteTest(signal)
-%     disp(['Signal is white.']);
-% else
-%     disp('Signal is not white.');
-% end
+if whiteTest(signal)
+    disp('Signal is not white.');
+end
 
 %% First static estimation.
 
