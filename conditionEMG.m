@@ -1,4 +1,4 @@
-function [out,outOld]=conditionEMG(signal,language)
+ function [out,outOld]=conditionEMG(signal,language)
 
 % [out]=conditionEMG(signal)
 %
