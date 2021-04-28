@@ -1,14 +1,14 @@
-function [w, m, ent] = adaptiveEnvelope(signal, varargin)
+function [w, m, ent] = adaptiveEnvelope(signal, fs, varargin)
 
-% [w, m, ent] = adaptiveEnvelope(signal, varargin)
+% [w, m, ent] = adaptiveEnvelope(signal, fs, varargin)
 %
 % Extracts the RMS EMG envelope using the automatic adaptive procedure
 % described in Ranaldi S., De Marchis C., Conforto S. "An automatic,
 % adaptive, information-based algorithm for the extraction of the sEMG
 % envelope".
 %
-% [w, m, ent] = adaptiveEnvelope(signal)
-%   Extract the envelope from the EMG signal.
+% [w, m, ent] = adaptiveEnvelope(signal, fs)
+%   Extract the envelope from the EMG signal sampled at fs Hz.
 %
 % [w, m, ent] = adaptiveEnvelope(..., 'mincontrol', val)
 %   If val = true sets the minimum of the extracted envelope to 0.
@@ -26,11 +26,12 @@ function [w, m, ent] = adaptiveEnvelope(signal, varargin)
 
 %% Input control
 
-narginchk(1,5);
+narginchk(1,7);
 
 minControl=false;
 varPlot=false;
 language='C';
+whitenWindow=max([fs, round(length(signal)/5)]);
 if ~isempty(varargin)
     i=1;
     while i<=length(varargin)-1
@@ -49,10 +50,10 @@ if ~isempty(varargin)
                 varPlot=varargin{i+1};
                 ctrl=1;
             case 'language'
-                if ~isstring(varargin{i+1})
-                    error('Invalid argument type');
-                end
                 language=varargin{i+1};
+                ctrl=1;
+            case 'wwin'
+                whitenWindow=varargin{i+1};
                 ctrl=1;
         end
         if ~ctrl
@@ -70,7 +71,7 @@ nu=2;
 maxIter=20;
 
 p=(2^(1/2*alpha))*gamma((alpha+1)/(2*alpha))/sqrt(pi); % Normalization Factor
-val=(((sqrt(pi)*gamma(nu+0.5))/(gamma(nu+0.5)))^2 - 1)/((alpha*nu)^2);
+%val=(((sqrt(pi)*gamma(nu+0.5))/(gamma(nu+0.5)))^2 - 1)/((alpha*nu)^2);
 
 %% Initialization.
 
@@ -79,37 +80,46 @@ load('chiTable.mat','chiTable'); % Loads the lookup table for the chi squared di
 if size(signal,1)>size(signal,2)
     signal=signal';
 end
-    
-[signal, signalOld]=conditionEMG(signal,language);
+
+[signal, signalOld]=conditionEMG(signal,language,whitenWindow);
+
+signal(isnan(signal)) = 0.0001*rand(1); % Provisional
 
 convStep=maxIter*ones(size(signal));
+ent=zeros(maxIter,length(signal));
 idx=1:length(signal);
 idx1=1:length(signal);
 idxB=zeros(1,length(signal));
 ctrl=0;
 
+if whiteTest(signal)
+    warning('The signal is not white. Results can be inaccurate');
+end
+
 %% Initialization of the window length.
 
-% ll=500;
+ll=length(signal);
 
 % Adaptive initialization.
-[Pxx,F] = periodogram(abs(signal)-mean(abs(signal)),[],1000,1000);
-[~, locs]= findpeaks(Pxx);
-if length(locs)>1
-    ll=F(locs(2));
-else
-    ll=F(locs(1));
-end
-ll=1/ll;
-ll=round(ll*1000);
+% [Pxx,F] = periodogram(abs(signal)-nanmean(abs(signal)),[],fs,fs);
+% [~, locs]= findpeaks(Pxx);
+% if length(locs)>1
+%     ll=F(locs(2));
+% else
+%     ll=F(locs(1));
+% end
+% ll=1/ll;
+% ll=round(ll*1000);
 
 m=ones(size(signal)).*(ll);
 
 %% Test for the whiteness of the signal.
 
-if whiteTest(signal)
-    warning('Signal is not white.');
-end
+% if ~whiteTest(signal)
+%     disp(['Signal is white.']);
+% else
+%     disp('Signal is not white.');
+% end
 
 %% First static estimation.
 
@@ -165,7 +175,7 @@ while ctrl==0
     end
     
     if count>maxIter
-        disp(['Maximum number of iterations reached!']);
+        disp('Maximum number of iterations reached!');
         disp([num2str(100*length(idx)/length(w)),'% of the sample did not converge.']);
         ctrl=1;
     end
@@ -184,7 +194,7 @@ if minControl
     end
 end
 
-convStep(convStep==maxIter)=NaN; % Just for visualization purposes.
+%convStep(convStep==maxIter)=NaN; % Just for visualization purposes.
 
 %% Plot of the results.
 

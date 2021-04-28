@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 
 	// ---- Inputs ----
 	double *signal;
-	double *predictorOrder, *windowLength;
+	int *predictorOrder, *windowLength;
 	
 	// ---- Outputs ----
 	double *whiteSignal, *coefficients;
@@ -37,11 +37,11 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 	
 	// ---- Input initialization ----
 	signal = mxGetPr(prhs[0]);
-	predictorOrder = mxGetPr(prhs[1]);
-	windowLength = mxGetPr(prhs[2]);
+	predictorOrder = (int*)mxGetPr(prhs[1]);
+	windowLength = (int*)mxGetPr(prhs[2]);
 	
 	semiLen = (int) floor(*windowLength/2);
-	nSamples=mxGetM(prhs[0]);
+	nSamples=(int) mxGetM(prhs[0]);
 	
 	// ---- Output initialization ----
 	plhs[0] = mxCreateDoubleMatrix(nSamples,1,mxREAL);
@@ -58,7 +58,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 		tmp1=MAX(0,i-semiLen);
 		tmp2=MIN(nSamples-1,i+semiLen);
 		
-		tmpOrder = MIN(*predictorOrder,(int)(tmp2-tmp1+1)/2);
+		tmpOrder = MIN((int)*predictorOrder,(int)(tmp2-tmp1+1)/2);
 				
 		whitening(signal,tmp1,tmp2,tmpOrder,&whiteSignal[i],coefficients);
 		
@@ -70,8 +70,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 
 void whitening(double *signal, int tmp1, int tmp2, int order, double *sampleOut, double *coefficients){		// AR filtering for whitening.
 	
-	long double autoCorr[order+1];
+	long double *autoCorr;
 	int i, x;
+
+	autoCorr = (double*) calloc((order+1), sizeof(double));
 
 	x=(int) (tmp2+tmp1)/2;
 	
@@ -117,8 +119,10 @@ void autoCorrelation(double *signal, int tmp1, int tmp2, int maxLag, long double
 void arCoefficients(double *signal, int order, long double *autocorr, double *coefficients){
 	
 	long double a[MAXORDER][MAXORDER]={{0}};
-	long double sigma[order];
+	long double *sigma;
 	int i,j;
+
+	sigma = (double*) calloc(order, sizeof(double));
 		
 	a[0][0] = - autocorr[1]/autocorr[0];
 	sigma[0] = (1 - pow(a[0][0],2.))*autocorr[0];
