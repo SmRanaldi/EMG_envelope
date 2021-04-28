@@ -34,3 +34,5 @@ C codes:
 ## Install
 
 Make sure that the MATLAB C package is installed. To use the adaptiveEnvelope.m function add its path and its subfolder to MATLAB.
+
+C functions have been compiled on Windows 10. MacOs or Linux users must recompile all the C codes in order for them to work on their systems.
