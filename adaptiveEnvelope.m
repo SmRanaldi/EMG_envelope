@@ -79,7 +79,7 @@ load('chiTable.mat','chiTable'); % Loads the lookup table for the chi squared di
 if size(signal,1)>size(signal,2)
     signal=signal';
 end
-
+    
 [signal, signalOld]=conditionEMG(signal,language);
 
 convStep=maxIter*ones(size(signal));
@@ -107,11 +107,9 @@ m=ones(size(signal)).*(ll);
 
 %% Test for the whiteness of the signal.
 
-% if ~whiteTest(signal)
-%     disp(['Signal is white.']);
-% else
-%     disp('Signal is not white.');
-% end
+if whiteTest(signal)
+    warning('Signal is not white.');
+end
 
 %% First static estimation.
 
