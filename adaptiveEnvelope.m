@@ -175,7 +175,7 @@ while ctrl==0
     end
     
     if count>maxIter
-        disp(['Maximum number of iterations reached!']);
+        disp('Maximum number of iterations reached!');
         disp([num2str(100*length(idx)/length(w)),'% of the sample did not converge.']);
         ctrl=1;
     end
