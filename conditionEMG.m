@@ -31,7 +31,8 @@ switch language
         
         while k+whitenWindow<=length(signal)
         
-            out = [out; whiteningSignal(signal(k+1:k+whitenWindow), 13, 150)];
+            tmp_out = whiteningSignal(signal(k+1:k+whitenWindow), 13, 150);
+            out = [out; tmp_out];
             
             k = k + whitenWindow;
             
