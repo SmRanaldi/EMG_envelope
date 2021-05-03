@@ -11,4 +11,5 @@ for i = 1:length(c_files)
     mex(c_files(i).name);
 end
 
-cd(old_dir)
+cd(old_dir);
+clear;
