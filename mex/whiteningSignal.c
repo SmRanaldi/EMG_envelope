@@ -58,7 +58,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 		tmp1=MAX(0,i-semiLen);
 		tmp2=MIN(nSamples-1,i+semiLen);
 		
-		tmpOrder = MIN((int)predictorOrder,(int)(tmp2-tmp1+1)/2);
+		tmpOrder = MIN((int)predictorOrder, (int)(tmp2-tmp1+1)/2);
 				
 		whitening(signal,tmp1,tmp2,tmpOrder,&whiteSignal[i],coefficients);
 		

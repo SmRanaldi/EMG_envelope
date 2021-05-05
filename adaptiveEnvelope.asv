@@ -68,7 +68,7 @@ end
 
 alpha=1;
 nu=2;
-maxIter=10;
+maxIter=0;
 
 p=(2^(1/2*alpha))*gamma((alpha+1)/(2*alpha))/sqrt(pi); % Normalization Factor
 %val=(((sqrt(pi)*gamma(nu+0.5))/(gamma(nu+0.5)))^2 - 1)/((alpha*nu)^2);
@@ -136,9 +136,9 @@ count=1;
 
 %% Optimal filter length extraction.
 
-% if language == "C"
-%     signal = signal';
-% end
+if language == "C"
+    signal = signal';
+end
 
 while ctrl==0
     
@@ -194,6 +194,8 @@ end
 %% Envelope extraction.
 
 [w] = envelopeEstimation(signal,m,alpha,nu,idx1,w,p);
+
+w=smooth(w,11);w=w';
 
 if minControl
     if length(find(w<(min(w(20:end-20))+0.05*range(w(20:end-20)))))>0.01*length(w)
