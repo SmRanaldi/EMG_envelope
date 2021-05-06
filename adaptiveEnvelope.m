@@ -17,6 +17,8 @@ function [w, m, ent] = adaptiveEnvelope(signal, fs, varargin)
 % [w, m, ent] = adaptiveEnvelope(..., 'language', l)
 %   If l = 'C' uses the mex-C version.
 %   If l = 'MATLAB' uses the MATLAB version.
+% [w, m, ent] = adaptiveEnvelope(..., 'static', val)
+%   If val=true the algorithm is optimized for static contractions (default: false)
 %
 % OUTPUTS:
 % 	w: the extracted envelope.
@@ -26,10 +28,11 @@ function [w, m, ent] = adaptiveEnvelope(signal, fs, varargin)
 
 %% Input control
 
-narginchk(1,7);
+narginchk(1,9);
 
 minControl=false;
 varPlot=false;
+staticCont=false;
 language='C';
 whitenWindow=max([fs, round(length(signal))]);
 if ~isempty(varargin)
@@ -54,6 +57,12 @@ if ~isempty(varargin)
                 ctrl=1;
             case 'wwin'
                 whitenWindow=varargin{i+1};
+                ctrl=1;
+            case 'static'
+                if ~islogical(varargin{i+1})
+                    error('Invalid argument type');
+                end
+                staticCont=varargin{i+1};
                 ctrl=1;
         end
         if ~ctrl
@@ -99,18 +108,20 @@ end
 %% Initialization of the window length.
 
 % ll=min([length(signal)/2, 10000]);
-% ll=300;
-
-% Adaptive initialization.
-[Pxx,F] = periodogram(abs(signal)-nanmean(abs(signal)),[],fs,fs);
-[~, locs]= findpeaks(Pxx);
-if length(locs)>1
-    ll=F(locs(2));
+if staticCont
+    ll=5000;
 else
-    ll=F(locs(1));
+%Adaptive initialization.
+    [Pxx,F] = periodogram(abs(signal)-nanmean(abs(signal)),[],fs,fs);
+    [~, locs]= findpeaks(Pxx);
+    if length(locs)>1
+        ll=F(locs(2));
+    else
+        ll=F(locs(1));
+    end
+    ll=1/ll;
+    ll=round(ll*1000);
 end
-ll=1/ll;
-ll=round(ll*1000);
 
 m=ones(size(signal)).*(ll);
 
