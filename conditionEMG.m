@@ -39,7 +39,7 @@ switch language
         end
         
         if k < length(signal)
-            out = [out, whiteningSignal(signal(k+1:end), 13, 150)];
+            out = [out; whiteningSignal(signal(k+1:end), 13, 150)];
         end
         
         out=((out./max(out)).*normFactor)';

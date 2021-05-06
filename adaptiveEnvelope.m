@@ -68,7 +68,7 @@ end
 
 alpha=1;
 nu=2;
-maxIter=10;
+maxIter=20;
 
 p=(2^(1/2*alpha))*gamma((alpha+1)/(2*alpha))/sqrt(pi); % Normalization Factor
 %val=(((sqrt(pi)*gamma(nu+0.5))/(gamma(nu+0.5)))^2 - 1)/((alpha*nu)^2);
@@ -140,56 +140,59 @@ count=1;
 %     signal = signal';
 % end
 
-while ctrl==0
+switch language
     
-    switch language
+    case "C"
+
+        [m,w] = loopFunction(signal,w,d,d2,m,chiTable);
         
-        case "C"
+    case "MATLAB"
+        
+        while ctrl==0
             
-            [mp,wp,dp,dp2] = loopFunction(signal,w,d,d2,m,idx);
             
-        case "MATLAB"
             
             mp=filterLength(w,d,d2,alpha,nu,idx,m);
             [wp] = envelopeEstimation(signal,mp,alpha,nu,idx,w,p);
             [dp,dp2]=derivativesEstimation(signal,mp,alpha,nu,idx,d,d2,p);
             
-    end
-    
-        [ent(count,:)]=estEntropy(signal,m,chiTable);
-    
-    if count>3
+            
+            [ent(count,:)]=estEntropy(signal,m,chiTable);
+            
+            if count>3
+                
+                e1=ent(count,:)-ent(count-1,:);
+                e2=ent(count-1,:)-ent(count-2,:);
+                ii=e2-e1<0; % Convergence test.
+                convStep(ii)=min(count-1,convStep(ii));
+                idxB=idxB | ii;
+                idx=find(~idxB);
+                
+            end
+            
+            % Updates
+            m(idx)=mp(idx);
+            w(idx)=wp(idx);
+            d(idx)=dp(idx);
+            d2(idx)=dp2(idx);
+            
+            count=count+1;
+            
+            % Break conditions.
+            if length(idx)<0.05*length(signal)
+                ctrl=1;
+            end
+            
+            if count>maxIter
+                disp('Maximum number of iterations reached!');
+                disp([num2str(100*length(idx)/length(w)),'% of the sample did not converge.']);
+                ctrl=1;
+            end
+            
+        end
         
-        e1=ent(count,:)-ent(count-1,:);
-        e2=ent(count-1,:)-ent(count-2,:);
-        ii=e2-e1<0; % Convergence test.
-        convStep(ii)=min(count-1,convStep(ii));
-        idxB=idxB | ii;
-        idx=find(~idxB);
-        
-    end
-    
-    % Updates
-    m(idx)=mp(idx);
-    w(idx)=wp(idx);
-    d(idx)=dp(idx);
-    d2(idx)=dp2(idx);
-    
-    count=count+1;
-    
-    % Break conditions.
-    if length(idx)<0.05*length(signal)
-        %         disp([int2str(count-1),' Iterations.']);
-        ctrl=1;
-    end
-    
-    if count>maxIter
-        disp('Maximum number of iterations reached!');
-        disp([num2str(100*length(idx)/length(w)),'% of the sample did not converge.']);
-        ctrl=1;
-    end
-    
 end
+
 
 %% Envelope extraction.
 
