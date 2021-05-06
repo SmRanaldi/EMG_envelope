@@ -17,6 +17,8 @@ function [w, m, ent] = adaptiveEnvelope(signal, fs, varargin)
 % [w, m, ent] = adaptiveEnvelope(..., 'language', l)
 %   If l = 'C' uses the mex-C version.
 %   If l = 'MATLAB' uses the MATLAB version.
+% [w, m, ent] = adaptiveEnvelope(..., 'static', val)
+%   If val=true the algorithm is optimized for static contractions (default: false)
 %
 % OUTPUTS:
 % 	w: the extracted envelope.
@@ -26,12 +28,13 @@ function [w, m, ent] = adaptiveEnvelope(signal, fs, varargin)
 
 %% Input control
 
-narginchk(1,7);
+narginchk(1,9);
 
 minControl=false;
 varPlot=false;
+staticCont=false;
 language='C';
-whitenWindow=max([fs, round(length(signal)/5)]);
+whitenWindow=max([fs, round(length(signal))]);
 if ~isempty(varargin)
     i=1;
     while i<=length(varargin)-1
@@ -55,6 +58,12 @@ if ~isempty(varargin)
             case 'wwin'
                 whitenWindow=varargin{i+1};
                 ctrl=1;
+            case 'static'
+                if ~islogical(varargin{i+1})
+                    error('Invalid argument type');
+                end
+                staticCont=varargin{i+1};
+                ctrl=1;
         end
         if ~ctrl
             error([varargin{i}, ' is not a valid argument']);
@@ -68,7 +77,7 @@ end
 
 alpha=1;
 nu=2;
-maxIter=20;
+maxIter=100;
 
 p=(2^(1/2*alpha))*gamma((alpha+1)/(2*alpha))/sqrt(pi); % Normalization Factor
 %val=(((sqrt(pi)*gamma(nu+0.5))/(gamma(nu+0.5)))^2 - 1)/((alpha*nu)^2);
@@ -98,18 +107,21 @@ end
 
 %% Initialization of the window length.
 
-ll=length(signal);
-
-% Adaptive initialization.
-% [Pxx,F] = periodogram(abs(signal)-nanmean(abs(signal)),[],fs,fs);
-% [~, locs]= findpeaks(Pxx);
-% if length(locs)>1
-%     ll=F(locs(2));
-% else
-%     ll=F(locs(1));
-% end
-% ll=1/ll;
-% ll=round(ll*1000);
+% ll=min([length(signal)/2, 10000]);
+if staticCont
+    ll=5000;
+else
+%Adaptive initialization.
+    [Pxx,F] = periodogram(abs(signal)-nanmean(abs(signal)),[],fs,fs);
+    [~, locs]= findpeaks(Pxx);
+    if length(locs)>1
+        ll=F(locs(2));
+    else
+        ll=F(locs(1));
+    end
+    ll=1/ll;
+    ll=round(ll*1000);
+end
 
 m=ones(size(signal)).*(ll);
 
@@ -126,67 +138,71 @@ m=ones(size(signal)).*(ll);
 w=staticEstimationW(signal, m, alpha, p);
 [d,d2]=staticEstimationD(signal, m, alpha, p);
 
-m=filterLength(w,d,d2,alpha,nu,idx,m);
-mProv(1,:)=m;
-[w] = envelopeEstimation(signal,m,alpha,nu,idx,w,p);
-wProv(1,:)=w;
-dProv(1,:)=d;
-d2Prov(1,:)=d2;
+m=filterLengthMat(w,d,d2,alpha,nu,idx,m);
+[w] = envelopeEstimationMat(signal,m,alpha,nu,idx,w,p);
 count=1;
 
 %% Optimal filter length extraction.
 
-while ctrl==0
+% if language == "C"
+%     signal = signal';
+% end
+
+switch language
     
-    mp=filterLength(w,d,d2,alpha,nu,idx,m);
-    [wp] = envelopeEstimation(signal,mp,alpha,nu,idx,w,p);
-    [dp,dp2]=derivativesEstimation(signal,mp,alpha,nu,idx,d,d2,p);
-    
-    count=count+1;
-    
-    [ent(count,:)]=estEntropy(signal,m,chiTable);
-    
-    if count>3
+    case "C"
+
+        [m,w] = loopFunction(signal,w,d,d2,m,chiTable);
         
-        e1=ent(count,:)-ent(count-1,:);
-        e2=ent(count-1,:)-ent(count-2,:);
-        ii=e2-e1<0; % Convergence test.
-        convStep(ii)=min(count-1,convStep(ii));
-        idxB=idxB | ii;
-        idx=find(~idxB);
+    case "MATLAB"
         
-    end
-    
-    % Updates
-    m(idx)=mp(idx);
-    w(idx)=wp(idx);
-    d(idx)=dp(idx);
-    d2(idx)=dp2(idx);
-    
-    mProv(count,:)=m;
-    wProv(count,:)=w;
-    dProv(count,:)=d;
-    d2Prov(count,:)=d2;
-    
-    % Break conditions.
-    if length(idx)<0.05*length(signal)
-%         disp([int2str(count-1),' Iterations.']);
-        ctrl=1;
-    end
-    
-    if count>maxIter
-        disp('Maximum number of iterations reached!');
-        disp([num2str(100*length(idx)/length(w)),'% of the sample did not converge.']);
-        ctrl=1;
-    end
-    
+        while ctrl==0
+            
+            mp=filterLengthMat(w,d,d2,alpha,nu,idx,m);
+            [wp] = envelopeEstimationMat(signal,mp,alpha,nu,idx,w,p);
+            [dp,dp2]=derivativesEstimationMat(signal,mp,alpha,nu,idx,d,d2,p);
+            
+            count = count + 1;
+            
+            [ent(count,:)]=estEntropy(signal,m,chiTable);
+            
+            if count>3
+                
+                e1=ent(count,:)-ent(count-1,:);
+                e2=ent(count-1,:)-ent(count-2,:);
+                ii=(e2-e1)<0; % Convergence test.
+                convStep(ii)=min(count-1,convStep(ii));
+                idxB=idxB | ii;
+                idx=find(~idxB);
+                
+            end
+            
+            % Updates
+            m(idx)=mp(idx);
+            w(idx)=wp(idx);
+            d(idx)=dp(idx);
+            d2(idx)=dp2(idx);
+            
+            % Break conditions.
+            if length(idx)<0.05*length(signal)
+                disp(['Convergence at iteration: ', num2str(count)]);
+                ctrl=1;
+            end
+            
+            if count>maxIter
+                disp('Maximum number of iterations reached!');
+                disp([num2str(100*length(idx)/length(w)),'% of the sample did not converge.']);
+                ctrl=1;
+            end
+            
+        end
+        
 end
+
 
 %% Envelope extraction.
 
-[w] = envelopeEstimation(signal,m,alpha,nu,idx1,w,p);
-
-w=smooth(w,11);w=w';
+[w] = envelopeEstimationMat(signal,m,alpha,nu,idx1,w,p);
 
 if minControl
     if length(find(w<(min(w(20:end-20))+0.05*range(w(20:end-20)))))>0.01*length(w)

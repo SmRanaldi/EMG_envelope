@@ -1,4 +1,4 @@
-function m = filterLength(w,d,d2,alpha,nu,idx,m)
+function m = filterLengthMat(w,d,d2,alpha,nu,idx,m)
 
 % m = filterLength(w,d,d2,alpha,nu,idx,m)
 %
