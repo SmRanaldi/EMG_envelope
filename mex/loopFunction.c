@@ -9,7 +9,7 @@
 #define F_FACTOR 0.535398163397448
 #define MIN(x,y) (x<y)?x:y
 #define MAX(x,y) (x>y)?x:y
-#define MAX_ITER 20
+#define MAX_ITER 100
 
 void filterLength(double *_m, double *_env, double *_d, double *_d2, double *_idx, int _nSamples);
 void envelopeEstimation(double *_m, double *_signal, double *_env, double *_idx, int _nSamples);
@@ -30,9 +30,10 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
     double *mOut_mx, *envOut_mx;
 	
 	// ---- Temporary variables ----
-    int i,j,k,MChi,NChi,nConv;
+    int i,j,k,MChi,NChi,nConv, thsConv;
     double tmpChi, tmpEnt;
     double *entT2, *entT1, *mTmp;
+    double convCtrl;
 	
 	// ---- Input initialization ----
 	nSamples=(int) mxGetN(prhs[0]);
@@ -47,6 +48,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
 
     idx = mxCalloc(nSamples,sizeof(double));
     chiSq = mxCalloc(MChi*NChi,sizeof(double));
+    thsConv = (int) floor(0.95*nSamples);
 
     for(i=0;i<MChi;i++){
         for(j=0;j<NChi;j++){
@@ -84,7 +86,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
     i=0;
     while(i<MAX_ITER){
         for(j=0;j<nSamples;j++){
-            mTmp[j] = mOut[j];
+            if(idx[j]==1){
+                mTmp[j] = mOut[j];
+            }
         }
         filterLength(mTmp, envOut, d1Out, d2Out, idx, nSamples);
         envelopeEstimation(mTmp, signal, envOut, idx, nSamples);
@@ -98,8 +102,8 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
                     }
                 }
                 if(i>1){
-                    // mexPrintf("!\n");
-                    if(((tmpEnt-entT1[j]) - (entT1[j]-entT2[j]))>0.0){
+                    convCtrl = (entT1[j]-entT2[j]) - (tmpEnt - entT1[j]);
+                    if( convCtrl<0.0 ){
                         idx[j] = 1;
                         nConv++;
                     }
@@ -109,7 +113,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
             }
         }
         updateM(mTmp, mOut, idx, nSamples);
-        if((double)nConv/nSamples > 0.95){
+        if(nConv>thsConv){
             mexPrintf("Convergence at iteration: %d\n",i+1);
             i = MAX_ITER;
         }

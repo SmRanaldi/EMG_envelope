@@ -1,4 +1,4 @@
-function w=envelopeEstimation(signal, m, alpha, nu, idx, w, p)
+function w=envelopeEstimationMat(signal, m, alpha, nu, idx, w, p)
 
 % w=envelopeEstimation(signal, m, alpha, nu, idx, w)
 %

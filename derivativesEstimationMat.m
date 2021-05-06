@@ -1,4 +1,4 @@
-function [der1 der2] = derivativesEstimation(signal, m, alpha, nu, idx, der1, der2, p)
+function [der1, der2] = derivativesEstimationMat(signal, m, alpha, nu, idx, der1, der2, p)
 
 % [der1 der2] = derivativesEstimation(signal, m, alpha, nu, idx, der1, der2, w)
 %

@@ -39,7 +39,11 @@ switch language
         end
         
         if k < length(signal)
-            out = [out; whiteningSignal(signal(k+1:end), 13, 150)];
+            if length(signal(k+1:end)) > 13
+                out = [out; whiteningSignal(signal(k+1:end), 13, 150)];
+            else
+                out = [out; signal(k+1:end)];
+            end
         end
         
         out=((out./max(out)).*normFactor)';
@@ -49,7 +53,7 @@ switch language
         out = [];
         k=0;
         
-        while k+whitenWindow<=length(signal)
+        while k+whitenWindow<length(signal)
             
             out = [out, whitenSignal(signal(k+1:k+whitenWindow), 13, 150)];
             
@@ -58,7 +62,11 @@ switch language
         end
         
         if k < length(signal)
-            out = [out, whitenSignal(signal(k+1:end), 13, 150)];
+            if length(signal(k+1:end)) > 13
+                out = [out, whitenSignal(signal(k+1:end), 13, 150)];
+            else
+                out = [out, signal(k+1:end)];
+            end
         end
         
         out=((out./max(out)).*normFactor);
