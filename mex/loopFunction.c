@@ -86,9 +86,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
     i=0;
     while(i<MAX_ITER){
         for(j=0;j<nSamples;j++){
-            if(idx[j]==1){
-                mTmp[j] = mOut[j];
-            }
+            mTmp[j] = mOut[j];
         }
         filterLength(mTmp, envOut, d1Out, d2Out, idx, nSamples);
         envelopeEstimation(mTmp, signal, envOut, idx, nSamples);
@@ -98,7 +96,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
                 tmpEnt = 0.0;
                 for(k=0;k<NChi;k++){
                     if(chiSq[(int)mOut[j]-1+k*MChi]!=0.0){
-                        tmpEnt += chiSq[(int)mOut[j]-1+k*MChi]*log(chiSq[(int)mOut[j]-1+k*MChi]);
+                        tmpEnt += chiSq[(int)mOut[j]-1+k*MChi]*log(1.0/chiSq[(int)mOut[j]-1+k*MChi]);
                     }
                 }
                 if(i>1){
@@ -108,9 +106,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]){
                         nConv++;
                     }
                 }
+            }
             entT2[j] = entT1[j];
             entT1[j] = tmpEnt;
-            }
         }
         updateM(mTmp, mOut, idx, nSamples);
         if(nConv>thsConv){

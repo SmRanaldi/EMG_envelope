@@ -98,19 +98,19 @@ end
 
 %% Initialization of the window length.
 
-ll=min([length(signal)/2, 10000]);
-ll=500;
+% ll=min([length(signal)/2, 10000]);
+% ll=300;
 
 % Adaptive initialization.
-% [Pxx,F] = periodogram(abs(signal)-nanmean(abs(signal)),[],fs,fs);
-% [~, locs]= findpeaks(Pxx);
-% if length(locs)>1
-%     ll=F(locs(2));
-% else
-%     ll=F(locs(1));
-% end
-% ll=1/ll;
-% ll=round(ll*1000);
+[Pxx,F] = periodogram(abs(signal)-nanmean(abs(signal)),[],fs,fs);
+[~, locs]= findpeaks(Pxx);
+if length(locs)>1
+    ll=F(locs(2));
+else
+    ll=F(locs(1));
+end
+ll=1/ll;
+ll=round(ll*1000);
 
 m=ones(size(signal)).*(ll);
 
@@ -128,11 +128,7 @@ w=staticEstimationW(signal, m, alpha, p);
 [d,d2]=staticEstimationD(signal, m, alpha, p);
 
 m=filterLengthMat(w,d,d2,alpha,nu,idx,m);
-mProv(1,:)=m;
 [w] = envelopeEstimationMat(signal,m,alpha,nu,idx,w,p);
-wProv(1,:)=w;
-dProv(1,:)=d;
-d2Prov(1,:)=d2;
 count=1;
 
 %% Optimal filter length extraction.
